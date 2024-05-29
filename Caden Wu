@@ -1,0 +1,387 @@
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import controlP5.*;
+import java.util.*;
+Table table;
+HashMap<String, Health> data = new HashMap<String, Health>();
+ArrayList<Health> result = new ArrayList<Health>();
+String showselected = "";
+boolean setupflag = false;
+  
+ControlP5 cp5;
+ScrollableList scrollableList;
+ScrollableList scrollselect;
+Textfield entertext;
+Textfield entermass;
+Textlabel searchlabel;
+Textlabel Title;
+String entertextString = "";
+Textlabel rshow;
+Textlabel tprotein;
+String entermassString = "";
+Button add;
+Button dlt;
+Button info;
+Textarea mask;
+Textarea infoText;
+Textarea infoCloseText;
+Textarea infoTextPadding;
+Button close;
+int rightselect = 0;
+int myColor = color(255);
+
+int c1, c2;
+
+float n, n1;
+float oy = 100; //oy = add extra y
+
+boolean infoFlag = false;
+
+float curFrame = 0;
+
+
+void setup() {
+  //size(400,600);
+  size(1100, 900);
+  cp5 = new ControlP5(this);
+
+  read("pprotein.csv");
+
+  ArrayList<String> temp = new ArrayList<String>(data.keySet());
+  entertext = cp5.addTextfield("entertext")
+
+    .setPosition(100, 45+oy)
+    .setSize(400, 50)
+    //.setFont(font)
+    .setFocus(true)
+    .setColor(color(255))
+    .setAutoClear(false)
+    ;
+  //entertext.getValueLabel().setSize(18);
+  entertext.getCaptionLabel().set("");
+  entertext.getValueLabel().setFont(createFont("Calibri", 24));
+
+  entermass = cp5.addTextfield("entermass")
+
+    .setPosition(700, 85+oy+45)
+    .setSize(300, 50)
+    //.setFont(font)
+    .setColor(color(255))
+    .setAutoClear(false)
+    ;
+  entermass.getCaptionLabel().set("");
+  entermass.getValueLabel().setFont(createFont("Calibri", 24));
+
+  scrollableList = cp5.addScrollableList("dropdown")
+
+    .setPosition(100, 100+oy)
+    .setSize(400, 600)
+    .setBarHeight(0)
+    .setItemHeight(40)
+    .addItems(temp)
+    .setType(ScrollableList.LIST)
+    ;
+
+
+  scrollableList.getCaptionLabel().setText("");
+  scrollableList.getValueLabel().toUpperCase(false);
+  //scrollableList.getValueLabel().setSize(16);
+  scrollableList.getValueLabel().setFont(createFont("Calibri", 20));
+
+  scrollselect = cp5.addScrollableList("selected")
+
+    .setPosition(600, 210+oy+45)
+    .setSize(400, 400-45)
+    .setBarHeight(0)
+    .setItemHeight(40)
+    //.addItems(temp)
+    .setType(ScrollableList.LIST)
+    ;
+  scrollselect.getCaptionLabel().setText("");
+  scrollselect.getValueLabel().toUpperCase(false);
+  scrollselect.getValueLabel().setFont(createFont("Calibri", 20));
+
+  searchlabel = cp5.addTextlabel("searchlabel")
+    .setText("Enter Below & Click to Add Item.")
+    .setPosition(170, 20+oy)
+    .setColorValue(000000)
+    .setFont(createFont("Calibri", 20))
+    ;
+
+  Title = cp5.addTextlabel("title")
+    .setText("Protein Calculator for Taiwanese Food")
+    .setPosition( width/2 - 350, 45)
+    .setColorValue(000000)
+    .setFont(createFont("Calibri", 45))
+    ;
+
+
+  rshow = cp5.addTextlabel("rshow")
+    .setText("Selected Item: \n\n\n\n\n\nMass(g)")
+    .setPosition(600, 20+oy)
+    .setColorValue(000000)
+    .setFont(createFont("Calibri", 20))
+    ;
+  tprotein = cp5.addTextlabel("tprotein")
+    .setText("Total Protein: "+ "0 (g)")
+    .setPosition(600, 660+oy)
+    .setColorValue(000000)
+    .setFont(createFont("Calibri", 40))
+    ;
+  add = cp5.addButton("add")
+    .setValue(0)
+    .setPosition(600, 155+oy+45)
+    .setSize(195, 40)
+    .setFont(createFont("Calibri", 20))
+    .hide()
+    ;
+
+  dlt = cp5.addButton("delete")
+    .setValue(0)
+    .setPosition(805, 155+oy+45)
+    .setSize(195, 40)
+    .setFont(createFont("Calibri", 20))
+    .hide()
+    ;
+
+
+
+  info = cp5.addButton("info")
+    .setValue(0)
+    .setPosition(1010, 750+oy)
+    .setSize(80, 40)
+    .setFont(createFont("Calibri", 20))
+    ;
+
+  setupflag = true;
+  noStroke();
+}
+
+void draw() {
+  background(225);
+  if (frameCount % (int)(frameRate/2.0) == 0) {
+    entertext.submit();
+    entermass.submit();
+  }
+}
+
+void read(String path) {
+  table = loadTable(path, "header");
+  println(table.getRowCount() + " total rows in table");
+  for (TableRow row : table.rows()) {
+    String name = row.getString("Name").trim();
+    float mass = row.getFloat("Mass (g)");
+    float protein = row.getFloat("Protein (g)");
+    println("Name: " + name);
+    println("Mass(g): " +mass);
+    println("Protein(g): " +protein);
+    println();
+    data.put(name, new Health(name, mass, protein));
+  }
+}
+
+
+ArrayList<String> dataFilter(String filterString) {
+  ArrayList<String> temp = new ArrayList<String>(data.keySet());
+  ArrayList<String> matchTemp = new ArrayList<String>();
+  Pattern pattern = Pattern.compile(filterString, Pattern.CASE_INSENSITIVE);
+  for (int i = 0; i <temp.size(); i++) {
+    Matcher matcher = pattern.matcher(temp.get(i));
+    boolean matchFound = matcher.find();
+    if (matchFound) {
+      matchTemp.add(temp.get(i));
+      println(temp.get(i));
+    }
+  }
+  return matchTemp;
+}
+
+public void entertext(String theText) {
+  println(theText);
+  String tempets = theText.trim();
+  if (!entertextString.equals(tempets)) {
+    entertextString = tempets;
+
+    scrollableList.clear();
+    scrollableList.setItems(dataFilter(entertextString));
+  }
+}
+
+void dropdown(int n) {
+  showselected = scrollableList.getItem(n).get("text").toString();
+  String temp = "Protein / Mass: " + data.get(showselected).protein + " / " + data.get(showselected).mass;
+  rshow.setText("Selected Item:\n\n" + scrollableList.getItem(n).get("text") + "\n\n"+ temp + "\n\nMass(g)");
+  add.show();
+  dlt.hide();
+  entermass.unlock();
+  for (int i =0; i < scrollselect.getItems().size(); i++) {
+    scrollselect.getItem(i).put("state", false);
+  }
+}
+
+String removeEndZero(float floatVal) {
+  String floatString = String.format("%.3f", floatVal);
+  char temp = floatString.charAt(floatString.length()-1);
+  while (temp =='0' || temp == '.') {
+    floatString = floatString.substring(0, floatString.length()-1);
+    if (temp == '.') {
+      break;
+    }
+    temp = floatString.charAt(floatString.length()-1);
+  }
+  
+  return floatString;
+}
+
+void selected(int n) {
+  rightselect = n;
+  add.hide();
+  dlt.show();
+  Health tempItem = result.get(rightselect);
+  Health dataItem = data.get(tempItem.name);
+  String temp = "Protein / Mass: " + dataItem.protein + " / " + dataItem.mass;
+  rshow.setText("Selected Item:\n\n" + tempItem.name + "\n\n"+ temp + "\n\nMass(g)");
+  entermassString = removeEndZero(tempItem.mass);
+  entermass.setText(entermassString);
+  entermass.lock();
+  for (int i =0; i < scrollableList.getItems().size(); i++) {
+    scrollableList.getItem(i).put("state", false);
+  }
+}
+
+public void entermass(String theText) {
+  
+  String tempets = theText.trim();
+  if (!entermassString.equals(tempets)) {
+    try {
+      float temp = -1;
+      if (!tempets.equals("")) {
+        temp = Float.parseFloat(tempets);
+        if (temp >= 0) {
+          entermassString = tempets;
+        } else {
+          entermass.setText(entermassString);
+        }
+      } else {
+        entermassString = "";
+      }
+    }
+    catch(Exception e) {
+      entermass.setText(entermassString);
+    }
+  }
+}
+
+public void add() {
+  if (setupflag) {
+
+    println(showselected + " " + entermassString + "(g)");
+    float usermass = Float.parseFloat(entermassString);
+    float ogmass = data.get(showselected).mass;
+    float ogprotein = data.get(showselected).protein;
+    float calculate = (usermass / ogmass) * ogprotein;
+    result.add(new Health(showselected, usermass, calculate));
+    //println(calculate);
+    scrollselect.clear();
+    ArrayList<String> temp = new ArrayList<String>();
+    float totalprotein = 0;
+    for (int i = 0; i < result.size(); i++) {
+      temp.add(result.get(i).mass + "(g) " + result.get(i).name);
+      totalprotein += result.get(i).protein;
+    }
+    scrollselect.addItems(temp);
+    tprotein.setText("Total Protein: " + removeEndZero(totalprotein) + " (g)");
+  }
+}
+
+public void delete() {
+  if (setupflag) {
+
+    result.remove(rightselect);
+    scrollselect.clear();
+    ArrayList<String> temp = new ArrayList<String>();
+    float totalprotein = 0;
+    for (int i = 0; i < result.size(); i++) {
+      temp.add(result.get(i).mass + "(g) " + result.get(i).name);
+      totalprotein += result.get(i).protein;
+    }
+    scrollselect.addItems(temp);
+    tprotein.setText("Total Protein: " + removeEndZero(totalprotein) + " (g)");
+    dlt.hide();
+    
+    rshow.setText("Selected Item: \n\n\n\n\n\nMass(g)");
+    entermassString = "";
+    entermass.setText(entermassString);
+  }
+}
+
+public void info() {
+  if (setupflag) {
+    infoFlag = !infoFlag;
+
+    if (infoFlag)
+    {
+      infoActive(true);
+      
+      curFrame = frameCount;
+    } else {
+      infoActive(false);
+    }
+  }
+}
+
+void mouseClicked() {
+  if (infoFlag && frameCount - curFrame > frameRate/2f) {
+    infoFlag = !infoFlag;
+    infoActive(false);
+  }
+}
+
+void infoActive(boolean active){
+  //mask.setVisible(active);
+  //infoText.setVisible(active);
+  //infoTextPadding.setVisible(active);
+  
+  if (active) {
+    mask = cp5.addTextarea("mask")
+      .setPosition(0, 0)
+      .setSize(width, height)
+      .setColorBackground(0xa0000000)
+      //.hide()
+      ;
+    infoTextPadding = cp5.addTextarea("infoTextPadding")
+      .setPosition(width/2 - 350 -40, height/2 -150 - 40)
+      .setSize(700+80, 300+80)
+      .setColorBackground(0xFFf0f0f0)
+      //.hide()
+      ;
+  
+    infoText = cp5.addTextarea("infoText")
+      .setPosition(width/2 - 350, height/2 -150)
+      .setSize(700, 300)
+      .setColorBackground(0x00f0f0f0)
+      .setFont(createFont("Segoe UI", 28))
+      .setLineHeight(32)
+      .setColor(0)
+      //.hide()
+      ;
+    infoText.setText("This is a protein calculator for general purposes and is specifically made for people with Phenylketonuria (PKU). PKU is a rare genetic disorder where they cannot consume protein like a normal person; they can only consume very small amounts and need to be strictly regulated. The data is specially tested and made for Taiwanese, done by the Ministry of Health and Welfare of Taiwan.");
+  
+    infoCloseText = cp5.addTextarea("infoCloseText")
+      .setPosition(width/2 - 100, height/2 -150 + 300)
+      .setSize(200, 260)
+      .setColorBackground(0x00f0f0f0)
+      .setFont(createFont("Segoe UI", 16))
+      .setColor(0x80)
+      //.hide()
+      ;
+    infoCloseText.setText("Click the mouse to close.");
+  } else {
+    mask.remove();
+    infoTextPadding.remove();
+    infoText.remove();
+    infoCloseText.remove();
+  }
+}
