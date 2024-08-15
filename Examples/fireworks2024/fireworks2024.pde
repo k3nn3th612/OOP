@@ -3,7 +3,7 @@ ArrayList<FW> shells = new ArrayList<FW>();
 
 void setup() {
   //fullScreen();
-  size(800, 800);
+  size(1200, 800);
   //f = new FW(random(100, width-100), 12 + random(4));
   background(60);
   noStroke();
